@@ -1,10 +1,11 @@
-def registry = 'https://trialhznx0g.jfrog.io/'
+def registry = 'https://trialhznx0g.jfrog.io'
 
 pipeline {
   agent any
 
   environment {
     PATH = "/opt/maven/bin:$PATH"
+    registry = "https://trialhznx0g.jfrog.io"
   }
 
   stages {
@@ -36,30 +37,29 @@ pipeline {
     }
 
     stage("Jar Publish") {
-     steps {
-      script {
-       echo '<--------------- Jar Publish Started --------------->'
-       def server = Artifactory.newServer url: registry + "/artifactory", credentialsId: "JFrog-cred"
-       def properties = "buildid=${env.BUILD_ID},commitid=${GIT_COMMIT}"
-       def uploadSpec = """{
+      steps {
+        script {
+          echo '<--------------- Jar Publish Started --------------->'
+          def server = Artifactory.newServer url: "${env.registry}/artifactory", credentialsId: "JFrog-cred"
+          def properties = "buildid=${env.BUILD_ID},commitid=${GIT_COMMIT}"
+          def uploadSpec = """{
             "files": [
               {
                 "pattern": "jarstaging/(*)",
                 "target": "jfrog-libs-release-local/{1}",
                 "flat": "false",
                 "props": "${properties}",
-                "exclusions": [ "*.sha1", "*.md5"]
-         
-               }
-            }
-        }"""
-       def buildInfo = server.upload(uploadSpec)
-       buildInfo.env.collect()
-       server.publishBuildInfo(buildInfo)
-       echo '<--------------- Jar Publish Ended --------------->'
+                "exclusions": [ "*.sha1", "*.md5" ]
+              }
+            ]
+          }"""
+          def buildInfo = server.upload(uploadSpec)
+          buildInfo.env.collect()
+          server.publishBuildInfo(buildInfo)
+          echo '<--------------- Jar Publish Ended --------------->'
+        }
+      }
     }
-   }
   }
- }
-} 
+}
 
